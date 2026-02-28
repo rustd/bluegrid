@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KelpSite AI — Kelp Restoration Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-950: #050e1a;
+      --bg-900: #0a1628;
+      --bg-800: #0d2137;
+      --bg-700: #112840;
+      --border: #1a3a5c;
+      --accent-blue: #00b4d8;
+      --accent-teal: #06d6a0;
+      --accent-yellow: #ffd166;
+      --accent-red: #ef476f;
+      --text-primary: #e8f4f8;
+      --text-secondary: #90e0ef;
+      --text-muted: #4a7a96;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(160deg, var(--bg-950) 0%, var(--bg-900) 60%, var(--bg-800) 100%);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg-950); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 9px; }
+
+    /* ── HEADER ── */
+    #header {
+      position: sticky; top: 0; z-index: 1000;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 28px;
+      background: rgba(5,14,26,0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: linear-gradient(135deg, #06d6a0, #00b4d8);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .logo-text { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; }
+    .logo-text span { color: var(--accent-teal); }
+    .logo-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .header-badges { display: flex; gap: 8px; align-items: center; }
+    .badge {
+      font-size: 11px; font-weight: 600; padding: 4px 12px;
+      border-radius: 99px; border: 1px solid var(--border); color: var(--text-secondary);
+    }
+    .badge-primary {
+      background: linear-gradient(135deg, #06d6a0, #00b4d8);
+      color: var(--bg-950); border: none; font-weight: 700;
+    }
+
+    /* ── STATS ROW ── */
+    #stats-row {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 14px; padding: 20px 28px 0;
+    }
+    .stat-card {
+      background: rgba(13,33,55,0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px 18px;
+    }
+    .stat-label {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 8px;
+    }
+    .stat-value { font-size: 34px; font-weight: 900; line-height: 1; }
+    .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── MAIN LAYOUT ── */
+    #main {
+      display: grid; grid-template-columns: 290px 1fr;
+      gap: 16px; padding: 16px 28px;
+      height: calc(100vh - 224px);
+    }
+
+    /* ── SIDEBAR ── */
+    #sidebar { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+    .panel {
+      background: rgba(13,33,55,0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px;
+    }
+    .panel-title {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text-secondary); margin-bottom: 12px;
+    }
+
+    /* Filter controls */
+    .filter-label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; display: block; }
+    select {
+      width: 100%; padding: 9px 12px; border-radius: 9px;
+      background: var(--bg-900); border: 1px solid var(--border);
+      color: var(--text-primary); font-size: 13px; font-family: inherit;
+      cursor: pointer; outline: none; margin-bottom: 14px;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2390e0ef' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+      padding-right: 32px;
+    }
+    select:focus { border-color: var(--accent-blue); }
+    input[type=range] { width: 100%; accent-color: var(--accent-teal); cursor: pointer; }
+    .range-val { color: var(--accent-teal); font-weight: 700; }
+
+    /* Legend */
+    .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .legend-text { font-size: 12px; color: var(--text-secondary); }
+    .legend-range { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+
+    /* Top sites */
+    .site-item {
+      padding: 10px 12px; border-radius: 10px; cursor: pointer;
+      border: 1px solid var(--border); margin-bottom: 8px;
+      transition: all 0.2s; position: relative;
+    }
+    .site-item:hover { border-color: var(--accent-blue); background: rgba(0,180,216,0.05); }
+    .site-item.selected { background: rgba(6,214,160,0.08); }
+    .site-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .site-rank { font-size: 11px; font-weight: 700; color: var(--text-muted); margin-right: 6px; }
+    .site-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .site-score-badge {
+      font-size: 13px; font-weight: 800;
+      padding: 2px 9px; border-radius: 6px;
+    }
+    .score-bar-track { background: var(--border); border-radius: 99px; height: 5px; width: 100%; margin: 4px 0; }
+    .score-bar-fill { border-radius: 99px; height: 5px; transition: width 0.6s ease; }
+    .site-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+    .site-risk { font-size: 10px; color: var(--accent-yellow); margin-top: 2px; }
+
+    /* ── MAP ── */
+    #map-wrap {
+      border-radius: 14px; overflow: hidden;
+      border: 1px solid var(--border); position: relative;
+    }
+    #map { height: 100%; width: 100%; }
+
+    /* Detail panel overlay */
+    #detail-panel {
+      position: absolute; bottom: 16px; right: 16px; z-index: 1000;
+      background: rgba(13,33,55,0.97);
+      backdrop-filter: blur(20px);
+      border-radius: 14px; padding: 18px 20px;
+      min-width: 250px; max-width: 280px;
+      box-shadow: 0 8px 48px rgba(0,0,0,0.7);
+      display: none;
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .detail-name { font-size: 16px; font-weight: 700; }
+    .detail-region { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .detail-score { font-size: 28px; font-weight: 900; line-height: 1; text-align: right; }
+    .detail-score-label { font-size: 10px; color: var(--text-muted); text-align: right; }
+    .divider { height: 1px; background: var(--border); margin: 12px 0; }
+    .score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .score-sub-label { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+    .score-sub-val { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+    .risk-box {
+      background: rgba(255,209,102,0.08); border: 1px solid rgba(255,209,102,0.25);
+      border-radius: 8px; padding: 8px 10px; margin-top: 8px;
+    }
+    .risk-item { font-size: 11px; color: var(--accent-yellow); }
+    .clear-flag { font-size: 11px; color: var(--accent-teal); }
+    #close-detail {
+      margin-top: 10px; width: 100%; padding: 7px;
+      border-radius: 8px; border: 1px solid var(--border);
+      background: transparent; color: var(--text-muted);
+      font-size: 12px; cursor: pointer; font-family: inherit;
+      transition: all 0.15s;
+    }
+    #close-detail:hover { border-color: var(--accent-blue); color: var(--text-secondary); }
+
+    /* ── TABLE ── */
+    #table-section { padding: 0 28px 28px; }
+    .table-wrap {
+      background: rgba(13,33,55,0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden;
+    }
+    .table-header {
+      padding: 14px 20px; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .table-title { font-size: 13px; font-weight: 700; }
+    .table-count { font-size: 12px; color: var(--text-muted); }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { border-bottom: 1px solid var(--border); }
+    th {
+      padding: 10px 16px; text-align: left;
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--text-muted); white-space: nowrap;
+    }
+    td { padding: 10px 16px; border-bottom: 1px solid rgba(26,58,92,0.4); }
+    tbody tr { cursor: pointer; transition: background 0.15s; }
+    tbody tr:hover { background: rgba(0,180,216,0.04); }
+    tbody tr.row-selected { background: rgba(6,214,160,0.06); }
+    tbody tr:last-child td { border-bottom: none; }
+    .pill {
+      display: inline-block; font-size: 11px; font-weight: 700;
+      padding: 3px 10px; border-radius: 99px;
+    }
+    .col-rank { color: var(--text-muted); font-weight: 700; }
+    .col-name { font-weight: 600; }
+    .col-region { color: var(--text-secondary); }
+    .col-sst-warn { color: var(--accent-red); }
+    .col-hist-yes { color: var(--accent-teal); }
+    .col-hist-no  { color: var(--text-muted); }
+    .col-risk-warn { color: var(--accent-yellow); font-size: 11px; }
+    .col-risk-ok   { color: var(--accent-teal); font-size: 11px; }
+
+    /* Leaflet override */
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+      background: var(--bg-800) !important;
+      border: 1px solid var(--border) !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+      color: var(--text-primary) !important;
+    }
+    .leaflet-popup-close-button { color: var(--text-secondary) !important; }
+    .leaflet-container { background: #050e1a !important; }
+    .leaflet-control-zoom a {
+      background: var(--bg-800) !important;
+      color: var(--text-secondary) !important;
+      border-color: var(--border) !important;
+    }
+    .leaflet-control-attribution {
+      background: rgba(5,14,26,0.7) !important;
+      color: var(--text-muted) !important;
+      font-size: 9px !important;
+    }
+    .leaflet-control-attribution a { color: var(--text-muted) !important; }
+
+    /* ── ANALYZE BUTTON ── */
+    #analyze-btn {
+      width: 100%; margin-top: 14px; padding: 12px;
+      border-radius: 10px; border: none; cursor: pointer;
+      font-family: inherit; font-size: 13px; font-weight: 700;
+      background: linear-gradient(135deg, #06d6a0, #00b4d8);
+      color: #050e1a; letter-spacing: 0.02em;
+      transition: all 0.2s; position: relative; overflow: hidden;
+    }
+    #analyze-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(6,214,160,0.35); }
+    #analyze-btn:active { transform: translateY(0); }
+    #analyze-btn.loading {
+      background: linear-gradient(135deg, #04a87d, #0091b0);
+      pointer-events: none;
+    }
+    #analyze-btn.loading::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.25) 50%, transparent 100%);
+      animation: shimmer 1s infinite;
+    }
+    @keyframes shimmer {
+      from { transform: translateX(-100%); }
+      to   { transform: translateX(100%); }
+    }
+    #analyze-btn.done {
+      background: linear-gradient(135deg, #04a87d, #0091b0);
+      pointer-events: none; opacity: 0.7;
+    }
+
+    /* Map empty state overlay */
+    #map-empty {
+      position: absolute; inset: 0; z-index: 500;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: rgba(5,14,26,0.72); backdrop-filter: blur(4px);
+      pointer-events: none;
+    }
+    #map-empty .em-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+    #map-empty .em-text { font-size: 15px; font-weight: 600; color: var(--text-muted); }
+    #map-empty .em-sub  { font-size: 12px; color: var(--text-muted); margin-top: 4px; opacity: 0.7; }
+
+    /* Marker pop-in animation */
+    @keyframes markerPop {
+      from { opacity: 0; transform: scale(0); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header id="header">
+  <div class="logo">
+    <div class="logo-icon">🌿</div>
+    <div>
+      <div class="logo-text">KelpSite <span>AI</span></div>
+      <div class="logo-sub">Kelp Restoration Intelligence Platform</div>
+    </div>
+  </div>
+  <div class="header-badges">
+    <span class="badge">NOAA CoastWatch</span>
+    <span class="badge">KelpWatch</span>
+    <span class="badge">Copernicus SST</span>
+    <span class="badge badge-primary">× Blue Frontier</span>
+  </div>
+</header>
+
+<!-- ── STATS ROW ── -->
+<div id="stats-row">
+  <div class="stat-card" style="border-color: rgba(239,71,111,0.3)">
+    <div class="stat-label">California Kelp Lost</div>
+    <div class="stat-value" style="color:#ef476f">97%</div>
+    <div class="stat-sub">Since 1980s baseline — Sequoias of the Sea</div>
+  </div>
+  <div class="stat-card" style="border-color: rgba(0,180,216,0.3)">
+    <div class="stat-label">Sites Analyzed</div>
+    <div class="stat-value" style="color:#00b4d8" id="stat-total">22</div>
+    <div class="stat-sub">California coastline · filtered view</div>
+  </div>
+  <div class="stat-card" style="border-color: rgba(6,214,160,0.3)">
+    <div class="stat-label">High-Viability Sites</div>
+    <div class="stat-value" style="color:#06d6a0" id="stat-high">—</div>
+    <div class="stat-sub" id="stat-high-sub">Loading...</div>
+  </div>
+  <div class="stat-card" style="border-color: rgba(255,209,102,0.3)">
+    <div class="stat-label">Top Site Score</div>
+    <div class="stat-value" style="color:#ffd166" id="stat-top">—</div>
+    <div class="stat-sub" id="stat-top-name">Loading...</div>
+  </div>
+</div>
+
+<!-- ── MAIN ── -->
+<div id="main">
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <!-- Filters -->
+    <div class="panel">
+      <div class="panel-title">Filters</div>
+      <label class="filter-label">Coastal Region</label>
+      <select id="region-filter"></select>
+      <label class="filter-label">
+        Min. Viability Score: <span class="range-val" id="score-val">0</span>
+      </label>
+      <input type="range" id="score-filter" min="0" max="90" step="5" value="0" />
+      <button id="analyze-btn" onclick="runAnalysis()">⬡ Analyze Sites</button>
+    </div>
+
+    <!-- Legend -->
+    <div class="panel">
+      <div class="panel-title">Viability Legend</div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#06d6a0"></div>
+        <span class="legend-text">High Viability</span>
+        <span class="legend-range">≥ 70</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#ffd166"></div>
+        <span class="legend-text">Moderate Viability</span>
+        <span class="legend-range">45 – 69</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#ef476f"></div>
+        <span class="legend-text">Low Viability</span>
+        <span class="legend-range">< 45</span>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0"></div>
+      <div style="font-size:11px;color:var(--text-muted);line-height:1.6">
+        Score = SST (35%) + Depth (25%) + Historical Presence (30%) + Nutrients (10%)
+      </div>
+    </div>
+
+    <!-- Top Sites -->
+    <div class="panel" style="flex:1;overflow-y:auto">
+      <div class="panel-title">Top Candidate Sites</div>
+      <div id="top-sites-list">
+        <div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:12px;line-height:1.8">
+          Set your filters above<br>then click<br>
+          <span style="color:var(--accent-teal);font-weight:700">⬡ Analyze Sites</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div id="map-wrap">
+    <div id="map"></div>
+    <!-- Empty state overlay -->
+    <div id="map-empty">
+      <div class="em-icon">🌊</div>
+      <div class="em-text">California Coastline Ready</div>
+      <div class="em-sub">Click "Analyze Sites" to score restoration candidates</div>
+    </div>
+    <!-- Detail overlay -->
+    <div id="detail-panel">
+      <div class="detail-header">
+        <div>
+          <div class="detail-name" id="d-name">—</div>
+          <div class="detail-region" id="d-region">—</div>
+        </div>
+        <div>
+          <div class="detail-score" id="d-score">—</div>
+          <div class="detail-score-label">/ 100 viability</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="score-grid" id="d-score-grid"></div>
+      <div id="d-env">
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Environmental Data</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px" id="d-env-grid"></div>
+      </div>
+      <div id="d-risks"></div>
+      <button id="close-detail">✕ Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TABLE ── -->
+<div id="table-section">
+  <div class="table-wrap">
+    <div class="table-header">
+      <div class="table-title">All Candidate Sites — Ranked by Viability Score</div>
+      <div class="table-count" id="table-count">Loading...</div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Rank</th><th>Site</th><th>Region</th><th>Score</th>
+            <th>SST (°C)</th><th>Depth (m)</th><th>Chlorophyll</th>
+            <th>Historical</th><th>Viability</th><th>Risk Flags</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA & SCORING
+// ═══════════════════════════════════════════════
+const RAW = [
+  { id:"MB1", name:"Fort Bragg North",    region:"Mendocino Coast",  lat:39.45, lon:-123.82, sst:11.2, depth:15, hist:true,  chl:4.2 },
+  { id:"MB2", name:"Point Arena",         region:"Mendocino Coast",  lat:38.91, lon:-123.69, sst:12.1, depth:18, hist:true,  chl:3.8 },
+  { id:"SC1", name:"Bodega Bay",          region:"Sonoma Coast",     lat:38.33, lon:-123.05, sst:12.8, depth:12, hist:true,  chl:5.1 },
+  { id:"SC2", name:"Salt Point",          region:"Sonoma Coast",     lat:38.57, lon:-123.33, sst:11.9, depth:14, hist:true,  chl:4.6 },
+  { id:"SC3", name:"Jenner",              region:"Sonoma Coast",     lat:38.45, lon:-123.12, sst:13.4, depth:8,  hist:false, chl:3.2 },
+  { id:"PR1", name:"Point Reyes South",   region:"Point Reyes",      lat:37.99, lon:-122.97, sst:12.5, depth:20, hist:true,  chl:4.7 },
+  { id:"PR2", name:"Duxbury Reef",        region:"Point Reyes",      lat:37.90, lon:-122.71, sst:13.8, depth:10, hist:true,  chl:3.9 },
+  { id:"MO1", name:"Monterey Peninsula",  region:"Monterey Bay",     lat:36.62, lon:-121.92, sst:13.1, depth:25, hist:true,  chl:6.2 },
+  { id:"MO2", name:"Pacific Grove",       region:"Monterey Bay",     lat:36.63, lon:-121.97, sst:12.9, depth:15, hist:true,  chl:5.8 },
+  { id:"MO3", name:"Carmel Bay",          region:"Monterey Bay",     lat:36.54, lon:-121.94, sst:13.5, depth:22, hist:true,  chl:5.1 },
+  { id:"MO4", name:"Moss Landing",        region:"Monterey Bay",     lat:36.80, lon:-121.79, sst:14.2, depth:8,  hist:false, chl:7.3 },
+  { id:"BS1", name:"Point Lobos",         region:"Big Sur",          lat:36.51, lon:-121.95, sst:13.0, depth:18, hist:true,  chl:4.5 },
+  { id:"BS2", name:"Pfeiffer Point",      region:"Big Sur",          lat:36.24, lon:-121.83, sst:14.8, depth:35, hist:false, chl:3.1 },
+  { id:"SL1", name:"Morro Bay",           region:"San Luis Obispo",  lat:35.37, lon:-120.86, sst:14.5, depth:12, hist:true,  chl:4.0 },
+  { id:"SL2", name:"Pismo Beach",         region:"San Luis Obispo",  lat:35.14, lon:-120.64, sst:15.2, depth:10, hist:false, chl:3.2 },
+  { id:"CI1", name:"Santa Cruz Island",   region:"Channel Islands",  lat:34.01, lon:-119.72, sst:15.8, depth:20, hist:true,  chl:3.5 },
+  { id:"CI2", name:"Anacapa Island",      region:"Channel Islands",  lat:34.01, lon:-119.42, sst:16.2, depth:18, hist:true,  chl:2.8 },
+  { id:"CI3", name:"San Nicolas Island",  region:"Channel Islands",  lat:33.24, lon:-119.50, sst:16.8, depth:22, hist:true,  chl:2.6 },
+  { id:"SB1", name:"Santa Barbara Coast", region:"Santa Barbara",    lat:34.41, lon:-119.69, sst:16.5, depth:15, hist:false, chl:2.5 },
+  { id:"LA1", name:"Palos Verdes",        region:"Los Angeles",      lat:33.74, lon:-118.40, sst:17.1, depth:25, hist:true,  chl:2.2 },
+  { id:"SD1", name:"Point Loma",          region:"San Diego",        lat:32.67, lon:-117.25, sst:18.2, depth:20, hist:true,  chl:2.1 },
+  { id:"SD2", name:"La Jolla Cove",       region:"San Diego",        lat:32.85, lon:-117.27, sst:17.9, depth:18, hist:true,  chl:2.4 },
+];
+
+function scoreSST(v) {
+  if (v < 8)  return 10;
+  if (v < 10) return 10 + (v-8)*30;
+  if (v <= 15) return Math.round(100 - Math.abs(v-12.5)*10);
+  if (v <= 18) return Math.max(0, Math.round(75 - (v-15)*22));
+  return 0;
+}
+function scoreDepth(v) {
+  if (v < 3)  return 10;
+  if (v < 5)  return 50;
+  if (v <= 30) return 100;
+  if (v <= 40) return Math.round(100-(v-30)*3);
+  return 50;
+}
+function scoreHist(v)  { return v ? 100 : 15; }
+function scoreChl(v) {
+  if (v < 1) return 10; if (v < 2) return 30;
+  if (v < 4) return 60; if (v < 6) return 85; return 100;
+}
+function getRisks(s,d,h,c) {
+  const f=[];
+  if (s>16) f.push("High SST"); else if (s>15) f.push("Warming Risk");
+  if (!h) f.push("No Historic Record");
+  if (d>35) f.push("Depth Marginal");
+  if (c<2)  f.push("Low Nutrients");
+  return f;
+}
+function viability(score) {
+  return score>=70?"high": score>=45?"moderate":"low";
+}
+
+const SITES = RAW.map(r => {
+  const ss=scoreSST(r.sst), ds=scoreDepth(r.depth),
+        hs=scoreHist(r.hist), ns=scoreChl(r.chl);
+  const score = Math.round(ss*0.35 + ds*0.25 + hs*0.30 + ns*0.10);
+  return { ...r, score, ss, ds, hs, ns,
+    risks: getRisks(r.sst,r.depth,r.hist,r.chl),
+    viability: viability(score) };
+}).sort((a,b)=>b.score-a.score);
+
+const REGIONS = ["All Regions", ...new Set(SITES.map(s=>s.region))];
+const COLOR = { high:"#06d6a0", moderate:"#ffd166", low:"#ef476f" };
+
+// ═══════════════════════════════════════════════
+// MAP
+// ═══════════════════════════════════════════════
+const map = L.map("map", { zoomControl:true }).setView([36.5,-121.5],6);
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+  attribution:'&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
+  maxZoom: 19
+}).addTo(map);
+
+let markers = {};
+let selectedId = null;
+
+function addMarkers(sites) {
+  Object.values(markers).forEach(m=>m.remove());
+  markers={};
+  sites.forEach(site => {
+    const col = COLOR[site.viability];
+    const r = Math.max(7, site.score/9);
+    const m = L.circleMarker([site.lat,site.lon], {
+      radius: r, color: col, fillColor: col,
+      fillOpacity: 0.75, weight: 2
+    }).addTo(map);
+    m.on("click", () => selectSite(site.id));
+    markers[site.id] = m;
+  });
+}
+
+function selectSite(id) {
+  // reset previous
+  if (selectedId && markers[selectedId]) {
+    const prev = SITES.find(s=>s.id===selectedId);
+    if (prev) {
+      const col=COLOR[prev.viability];
+      markers[selectedId].setStyle({fillOpacity:0.75,weight:2,color:col});
+    }
+  }
+  if (selectedId === id) {
+    selectedId=null;
+    document.getElementById("detail-panel").style.display="none";
+    document.querySelectorAll(".site-item,.row-site").forEach(el=>el.classList.remove("selected","row-selected"));
+    return;
+  }
+  selectedId = id;
+  const site = SITES.find(s=>s.id===id);
+  if (!site) return;
+  const col = COLOR[site.viability];
+  if (markers[id]) {
+    markers[id].setStyle({fillOpacity:1,weight:3.5,color:"#ffffff"});
+    map.flyTo([site.lat,site.lon],10,{duration:1.2});
+  }
+  // highlight sidebar
+  document.querySelectorAll(".site-item").forEach(el=>el.classList.toggle("selected",el.dataset.id===id));
+  document.querySelectorAll("tr[data-id]").forEach(el=>el.classList.toggle("row-selected",el.dataset.id===id));
+  showDetail(site);
+}
+
+function showDetail(site) {
+  const col = COLOR[site.viability];
+  const panel = document.getElementById("detail-panel");
+  panel.style.borderColor = col+"50";
+  panel.style.display = "block";
+  document.getElementById("d-name").textContent = site.name;
+  document.getElementById("d-region").textContent = site.region;
+  document.getElementById("d-score").textContent = site.score;
+  document.getElementById("d-score").style.color = col;
+
+  const grid = document.getElementById("d-score-grid");
+  grid.innerHTML = [
+    { label:"🌡 SST Score",     val:site.ss },
+    { label:"📏 Depth Score",   val:site.ds },
+    { label:"📜 History Score", val:site.hs },
+    { label:"🌿 Nutrient Score",val:site.ns },
+  ].map(i=>`
+    <div>
+      <div class="score-sub-label">${i.label}</div>
+      <div class="score-bar-track"><div class="score-bar-fill" style="width:${i.val}%;background:${col}"></div></div>
+      <div class="score-sub-val">${i.val}/100</div>
+    </div>`).join("");
+
+  document.getElementById("d-env-grid").innerHTML = [
+    ["🌡️ SST", `${site.sst}°C`],
+    ["📏 Depth", `${site.depth}m`],
+    ["🌿 Chlorophyll", `${site.chl} mg/m³`],
+    ["📍 Historical", site.hist?"Yes ✓":"No ✗"],
+  ].map(([k,v])=>`<div style="color:var(--text-muted)">${k}</div><div style="color:var(--text-primary);font-weight:600">${v}</div>`).join("");
+
+  const riskEl = document.getElementById("d-risks");
+  if (site.risks.length>0) {
+    riskEl.innerHTML=`<div class="risk-box">${site.risks.map(r=>`<div class="risk-item">⚠ ${r}</div>`).join("")}</div>`;
+  } else {
+    riskEl.innerHTML=`<div class="risk-box" style="background:rgba(6,214,160,0.06);border-color:rgba(6,214,160,0.2)"><div class="clear-flag">✓ No risk flags — strong candidate</div></div>`;
+  }
+}
+
+document.getElementById("close-detail").onclick = () => {
+  document.getElementById("detail-panel").style.display="none";
+  if (selectedId && markers[selectedId]) {
+    const prev=SITES.find(s=>s.id===selectedId);
+    if (prev) markers[selectedId].setStyle({fillOpacity:0.75,weight:2,color:COLOR[prev.viability]});
+  }
+  selectedId=null;
+  document.querySelectorAll(".site-item,.row-site").forEach(el=>el.classList.remove("selected","row-selected"));
+};
+
+// ═══════════════════════════════════════════════
+// FILTERS & RENDERING
+// ═══════════════════════════════════════════════
+const regionSel = document.getElementById("region-filter");
+const scoreSlider = document.getElementById("score-filter");
+const scoreValEl = document.getElementById("score-val");
+
+REGIONS.forEach(r => {
+  const opt=document.createElement("option"); opt.value=r; opt.textContent=r;
+  regionSel.appendChild(opt);
+});
+
+function getFiltered() {
+  const reg=regionSel.value, min=+scoreSlider.value;
+  return SITES.filter(s=>(reg==="All Regions"||s.region===reg)&&s.score>=min);
+}
+
+function renderAll() {
+  const filtered = getFiltered();
+
+  // Stats
+  const high = filtered.filter(s=>s.viability==="high").length;
+  const mid  = filtered.filter(s=>s.viability==="moderate").length;
+  document.getElementById("stat-total").textContent = filtered.length;
+  document.getElementById("stat-high").textContent  = high;
+  document.getElementById("stat-high-sub").textContent = `${mid} moderate · filtered view`;
+  if (filtered[0]) {
+    document.getElementById("stat-top").textContent  = filtered[0].score+"/100";
+    document.getElementById("stat-top-name").textContent = filtered[0].name;
+  }
+  document.getElementById("table-count").textContent = `${filtered.length} sites · California Coast`;
+
+  // Map
+  addMarkers(filtered);
+
+  // Top sites sidebar
+  const topList = document.getElementById("top-sites-list");
+  topList.innerHTML = filtered.slice(0,6).map((s,i)=>{
+    const col=COLOR[s.viability];
+    return `
+    <div class="site-item" data-id="${s.id}" onclick="selectSite('${s.id}')">
+      <div class="site-item-header">
+        <div><span class="site-rank">#${i+1}</span><span class="site-name">${s.name}</span></div>
+        <span class="site-score-badge" style="color:${col};background:${col}22">${s.score}</span>
+      </div>
+      <div class="score-bar-track"><div class="score-bar-fill" style="width:${s.score}%;background:${col}"></div></div>
+      <div class="site-meta">${s.sst}°C · ${s.depth}m · ${s.region}</div>
+      ${s.risks[0]?`<div class="site-risk">⚠ ${s.risks[0]}</div>`:""}
+    </div>`;
+  }).join("");
+
+  // Table
+  const tbody = document.getElementById("table-body");
+  tbody.innerHTML = filtered.map((s,i)=>{
+    const col=COLOR[s.viability];
+    const viabLabel = {high:"High",moderate:"Moderate",low:"Low"}[s.viability];
+    return `
+    <tr data-id="${s.id}" onclick="selectSite('${s.id}')">
+      <td class="col-rank">#${i+1}</td>
+      <td class="col-name">${s.name}</td>
+      <td class="col-region">${s.region}</td>
+      <td><span class="pill" style="color:${col};background:${col}22;font-size:14px;font-weight:800">${s.score}</span></td>
+      <td class="${s.sst>15?"col-sst-warn":""}">${s.sst}</td>
+      <td>${s.depth}</td>
+      <td>${s.chl}</td>
+      <td class="${s.hist?"col-hist-yes":"col-hist-no"}">${s.hist?"✓ Yes":"✗ No"}</td>
+      <td><span class="pill" style="color:${col};background:${col}22">${viabLabel}</span></td>
+      <td>${s.risks.length>0
+        ?`<span class="col-risk-warn">⚠ ${s.risks.join(" · ")}</span>`
+        :`<span class="col-risk-ok">✓ Clear</span>`}
+      </td>
+    </tr>`;
+  }).join("");
+
+  // Restore selection state
+  if (selectedId) {
+    document.querySelectorAll(".site-item").forEach(el=>el.classList.toggle("selected",el.dataset.id===selectedId));
+    document.querySelectorAll("tr[data-id]").forEach(el=>el.classList.toggle("row-selected",el.dataset.id===selectedId));
+  }
+}
+
+let analysisRun = false;
+
+scoreSlider.oninput = () => {
+  scoreValEl.textContent = scoreSlider.value;
+  if (analysisRun) renderAll();
+};
+regionSel.onchange = () => { if (analysisRun) renderAll(); };
+
+function runAnalysis() {
+  const btn = document.getElementById("analyze-btn");
+  btn.textContent = "Analyzing...";
+  btn.classList.add("loading");
+
+  // Brief dramatic pause then reveal
+  setTimeout(() => {
+    analysisRun = true;
+
+    // Hide empty-state overlay
+    const emptyEl = document.getElementById("map-empty");
+    emptyEl.style.transition = "opacity 0.5s";
+    emptyEl.style.opacity = "0";
+    setTimeout(() => emptyEl.style.display = "none", 500);
+
+    // Render stats + sidebar + table immediately
+    const filtered = getFiltered();
+    const high = filtered.filter(s=>s.viability==="high").length;
+    const mid  = filtered.filter(s=>s.viability==="moderate").length;
+    document.getElementById("stat-total").textContent = filtered.length;
+    document.getElementById("stat-high").textContent  = high;
+    document.getElementById("stat-high-sub").textContent = `${mid} moderate · filtered view`;
+    if (filtered[0]) {
+      document.getElementById("stat-top").textContent  = filtered[0].score+"/100";
+      document.getElementById("stat-top-name").textContent = filtered[0].name;
+    }
+    document.getElementById("table-count").textContent = `${filtered.length} sites · California Coast`;
+
+    // Render sidebar + table
+    const topList = document.getElementById("top-sites-list");
+    topList.innerHTML = filtered.slice(0,6).map((s,i)=>{
+      const col=COLOR[s.viability];
+      return `
+      <div class="site-item" data-id="${s.id}" onclick="selectSite('${s.id}')">
+        <div class="site-item-header">
+          <div><span class="site-rank">#${i+1}</span><span class="site-name">${s.name}</span></div>
+          <span class="site-score-badge" style="color:${col};background:${col}22">${s.score}</span>
+        </div>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:${s.score}%;background:${col}"></div></div>
+        <div class="site-meta">${s.sst}°C · ${s.depth}m · ${s.region}</div>
+        ${s.risks[0]?`<div class="site-risk">⚠ ${s.risks[0]}</div>`:""}
+      </div>`;
+    }).join("");
+
+    const tbody = document.getElementById("table-body");
+    tbody.innerHTML = filtered.map((s,i)=>{
+      const col=COLOR[s.viability];
+      const viabLabel = {high:"High",moderate:"Moderate",low:"Low"}[s.viability];
+      return `
+      <tr data-id="${s.id}" onclick="selectSite('${s.id}')">
+        <td class="col-rank">#${i+1}</td>
+        <td class="col-name">${s.name}</td>
+        <td class="col-region">${s.region}</td>
+        <td><span class="pill" style="color:${col};background:${col}22;font-size:14px;font-weight:800">${s.score}</span></td>
+        <td class="${s.sst>15?"col-sst-warn":""}">${s.sst}</td>
+        <td>${s.depth}</td>
+        <td>${s.chl}</td>
+        <td class="${s.hist?"col-hist-yes":"col-hist-no"}">${s.hist?"✓ Yes":"✗ No"}</td>
+        <td><span class="pill" style="color:${col};background:${col}22">${viabLabel}</span></td>
+        <td>${s.risks.length>0
+          ?`<span class="col-risk-warn">⚠ ${s.risks.join(" · ")}</span>`
+          :`<span class="col-risk-ok">✓ Clear</span>`}
+        </td>
+      </tr>`;
+    }).join("");
+
+    // Stagger markers onto map for visual drama
+    Object.values(markers).forEach(m=>m.remove());
+    markers = {};
+    filtered.forEach((site, idx) => {
+      setTimeout(() => {
+        const col = COLOR[site.viability];
+        const r = Math.max(7, site.score/9);
+        const m = L.circleMarker([site.lat,site.lon], {
+          radius: 0, color: col, fillColor: col, fillOpacity: 0, weight: 2
+        }).addTo(map);
+        // Animate radius in
+        let frame = 0;
+        const target = r;
+        const anim = setInterval(() => {
+          frame++;
+          const progress = Math.min(frame / 10, 1);
+          const ease = 1 - Math.pow(1 - progress, 3);
+          m.setStyle({ radius: target * ease, fillOpacity: 0.75 * ease });
+          if (progress >= 1) clearInterval(anim);
+        }, 20);
+        m.on("click", () => selectSite(site.id));
+        markers[site.id] = m;
+      }, idx * 60);
+    });
+
+    // Update button
+    btn.classList.remove("loading");
+    btn.classList.add("done");
+    btn.textContent = `✓ ${filtered.length} Sites Analyzed`;
+
+  }, 900);
+}
+
+// Re-render on filter change after first analysis
+function renderAll() {
+  const filtered = getFiltered();
+  const high = filtered.filter(s=>s.viability==="high").length;
+  const mid  = filtered.filter(s=>s.viability==="moderate").length;
+  document.getElementById("stat-total").textContent = filtered.length;
+  document.getElementById("stat-high").textContent  = high;
+  document.getElementById("stat-high-sub").textContent = `${mid} moderate · filtered view`;
+  if (filtered[0]) {
+    document.getElementById("stat-top").textContent  = filtered[0].score+"/100";
+    document.getElementById("stat-top-name").textContent = filtered[0].name;
+  }
+  document.getElementById("table-count").textContent = `${filtered.length} sites · California Coast`;
+  addMarkers(filtered);
+
+  const topList = document.getElementById("top-sites-list");
+  topList.innerHTML = filtered.slice(0,6).map((s,i)=>{
+    const col=COLOR[s.viability];
+    return `
+    <div class="site-item" data-id="${s.id}" onclick="selectSite('${s.id}')">
+      <div class="site-item-header">
+        <div><span class="site-rank">#${i+1}</span><span class="site-name">${s.name}</span></div>
+        <span class="site-score-badge" style="color:${col};background:${col}22">${s.score}</span>
+      </div>
+      <div class="score-bar-track"><div class="score-bar-fill" style="width:${s.score}%;background:${col}"></div></div>
+      <div class="site-meta">${s.sst}°C · ${s.depth}m · ${s.region}</div>
+      ${s.risks[0]?`<div class="site-risk">⚠ ${s.risks[0]}</div>`:""}
+    </div>`;
+  }).join("");
+
+  const tbody = document.getElementById("table-body");
+  tbody.innerHTML = filtered.map((s,i)=>{
+    const col=COLOR[s.viability];
+    const viabLabel = {high:"High",moderate:"Moderate",low:"Low"}[s.viability];
+    return `
+    <tr data-id="${s.id}" onclick="selectSite('${s.id}')">
+      <td class="col-rank">#${i+1}</td>
+      <td class="col-name">${s.name}</td>
+      <td class="col-region">${s.region}</td>
+      <td><span class="pill" style="color:${col};background:${col}22;font-size:14px;font-weight:800">${s.score}</span></td>
+      <td class="${s.sst>15?"col-sst-warn":""}">${s.sst}</td>
+      <td>${s.depth}</td>
+      <td>${s.chl}</td>
+      <td class="${s.hist?"col-hist-yes":"col-hist-no"}">${s.hist?"✓ Yes":"✗ No"}</td>
+      <td><span class="pill" style="color:${col};background:${col}22">${viabLabel}</span></td>
+      <td>${s.risks.length>0
+        ?`<span class="col-risk-warn">⚠ ${s.risks.join(" · ")}</span>`
+        :`<span class="col-risk-ok">✓ Clear</span>`}
+      </td>
+    </tr>`;
+  }).join("");
+
+  const btn = document.getElementById("analyze-btn");
+  btn.classList.remove("loading","done");
+  btn.textContent = "⬡ Analyze Sites";
+  btn.classList.remove("done");
+  btn.style.opacity = "1";
+  btn.style.pointerEvents = "auto";
+}
+</script>
+</body>
+</html>

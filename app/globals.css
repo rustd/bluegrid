@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+
+body {
+  background: #050e1a;
+  color: #e8f4f8;
+  font-family: 'Inter', system-ui, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Override leaflet popup styles */
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #0d2137 !important;
+  border: 1px solid #1a3a5c !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+  border-radius: 12px !important;
+  padding: 0 !important;
+}
+.leaflet-popup-content {
+  margin: 0 !important;
+}
+.leaflet-popup-close-button {
+  color: #90e0ef !important;
+  font-size: 18px !important;
+  padding: 6px !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0a1628; }
+::-webkit-scrollbar-thumb { background: #1a3a5c; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #2563a8; }
+
+@layer utilities {
+  .glass {
+    background: rgba(13, 33, 55, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(26, 58, 92, 0.6);
+  }
+  .glow-teal { box-shadow: 0 0 20px rgba(6, 214, 160, 0.2); }
+  .glow-blue { box-shadow: 0 0 20px rgba(0, 180, 216, 0.2); }
+}

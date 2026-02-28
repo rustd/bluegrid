@@ -77,6 +77,17 @@ export default function Home() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button
+            onClick={() => document.getElementById("dashboard")?.scrollIntoView({ behavior: "smooth" })}
+            style={{
+              fontSize: 13, fontWeight: 700, padding: "10px 20px", borderRadius: 10,
+              background: "linear-gradient(135deg, #06d6a0, #00b4d8)", color: "#050e1a",
+              border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
+              boxShadow: "0 4px 14px rgba(6, 214, 160, 0.35)",
+            }}
+          >
+            ⬡ Analyze Sites
+          </button>
           <span style={{
             fontSize: 11, fontWeight: 600, padding: "4px 10px",
             borderRadius: 99, border: "1px solid #1a3a5c", color: "#90e0ef"
@@ -93,7 +104,7 @@ export default function Home() {
       </header>
 
       {/* ── STATS BAR ── */}
-      <div style={{ padding: "20px 28px 0", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }}>
+      <div id="dashboard" style={{ padding: "20px 28px 0", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }}>
         <StatCard label="California Kelp Lost" value="97%" sub="Since 1980s baseline" accent="#ef476f" />
         <StatCard label="Sites Analyzed" value={filtered.length} sub={`of ${STATS.totalSites} total sites`} accent="#00b4d8" />
         <StatCard label="High-Viability Sites" value={highCount} sub={`${midCount} moderate · filtered view`} accent="#06d6a0" />

@@ -1,5 +1,5 @@
-# BlueGrid — 60-Second Pitch Script
-**OceanTech Hackathon 2026 | Track 2C | Blue Frontier**
+# BlueGrid
+Kelp Restoration: Months → Seconds
 
 Slide 1 — The Problem
 Opens with the devastating "97%" in massive red on the left — impossible to ignore. Three problem cards on the right quantify the friction: 4+ data sources, 3 weeks of manual work, 1x expert bottleneck. The quote closes it: "The ocean cannot wait for spreadsheets."

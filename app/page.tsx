@@ -69,7 +69,7 @@ export default function Home() {
           }}>🌿</div>
           <div>
             <div style={{ fontWeight: 800, fontSize: 20, letterSpacing: "-0.02em", color: "#e8f4f8" }}>
-              KelpSite <span style={{ color: "#06d6a0" }}>AI</span>
+              BlueGrid
             </div>
             <div style={{ fontSize: 11, color: "#5e8fa8", marginTop: 1 }}>
               Kelp Restoration Intelligence Platform

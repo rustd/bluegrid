@@ -45,9 +45,3 @@ npm start
 - `components/KelpMap.tsx`: map and overlay rendering
 - `app/api/kelp-sites/route.ts`: live data aggregation API
 - `lib/data.ts`: candidate site model, scoring, fallback generation
-
-## Security / credentials
-- No secrets are required to run this project.
-- Local env files are ignored via `.gitignore` (`.env`, `.env*.local`).
-- Private keys (`*.pem`) are ignored.
-- Do not commit API tokens or credentials into source files.

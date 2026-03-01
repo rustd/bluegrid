@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { Fragment, useEffect } from "react";
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { KelpSite } from "@/lib/data";
@@ -9,6 +9,13 @@ interface Props {
   sites: KelpSite[];
   selectedSite: KelpSite | null;
   onSelectSite: (site: KelpSite) => void;
+  overlays: {
+    temperature: boolean;
+    nutrients: boolean;
+    depth: boolean;
+    currents: boolean;
+  };
+  satellite: boolean;
 }
 
 function FlyToSite({ site }: { site: KelpSite | null }) {
@@ -19,7 +26,7 @@ function FlyToSite({ site }: { site: KelpSite | null }) {
   return null;
 }
 
-export default function KelpMap({ sites, selectedSite, onSelectSite }: Props) {
+export default function KelpMap({ sites, selectedSite, onSelectSite, overlays, satellite }: Props) {
   const getColor = (viability: string) => {
     if (viability === "high")     return "#06d6a0";
     if (viability === "moderate") return "#ffd166";
@@ -27,19 +34,60 @@ export default function KelpMap({ sites, selectedSite, onSelectSite }: Props) {
   };
 
   const getRadius = (score: number) => Math.max(6, score / 8);
+  const overlayOpacity = 0.25;
 
   return (
     <MapContainer
-      center={[36.5, -121.5]}
-      zoom={6}
+      center={[12, 0]}
+      zoom={2}
       style={{ height: "100%", width: "100%", borderRadius: "0.75rem" }}
       className="z-0"
     >
-      <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-      />
+      {satellite ? (
+        <TileLayer
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          attribution='&copy; <a href="https://www.esri.com/">Esri World Imagery</a>'
+        />
+      ) : (
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+        />
+      )}
       <FlyToSite site={selectedSite} />
+
+      {sites.map((site) => (
+        <Fragment key={`overlay-${site.id}`}>
+          {overlays.temperature && (
+            <CircleMarker
+              center={[site.lat, site.lon]}
+              radius={Math.max(8, site.sstScore / 3.5)}
+              pathOptions={{ color: "#ff7f50", fillColor: "#ff7f50", fillOpacity: overlayOpacity, weight: 0 }}
+            />
+          )}
+          {overlays.nutrients && (
+            <CircleMarker
+              center={[site.lat, site.lon]}
+              radius={Math.max(8, site.nutrientScore / 3.5)}
+              pathOptions={{ color: "#7dd56f", fillColor: "#7dd56f", fillOpacity: overlayOpacity, weight: 0 }}
+            />
+          )}
+          {overlays.depth && (
+            <CircleMarker
+              center={[site.lat, site.lon]}
+              radius={Math.max(8, site.depthScore / 3.5)}
+              pathOptions={{ color: "#5dade2", fillColor: "#5dade2", fillOpacity: overlayOpacity, weight: 0 }}
+            />
+          )}
+          {overlays.currents && (
+            <CircleMarker
+              center={[site.lat, site.lon]}
+              radius={Math.max(8, site.currentScore / 3.5)}
+              pathOptions={{ color: "#f5b041", fillColor: "#f5b041", fillOpacity: overlayOpacity, weight: 0 }}
+            />
+          )}
+        </Fragment>
+      ))}
 
       {sites.map((site) => (
         <CircleMarker
@@ -75,6 +123,7 @@ export default function KelpMap({ sites, selectedSite, onSelectSite }: Props) {
                 <div>🌡️ SST: <strong>{site.sst}°C</strong></div>
                 <div>📏 Depth: <strong>{site.depth}m</strong></div>
                 <div>🌿 Chl: <strong>{site.chlorophyll} mg/m³</strong></div>
+                <div>🌀 Current: <strong>{site.currentVelocity} m/s</strong></div>
                 <div>📍 History: <strong>{site.historicalPresence ? "Yes" : "No"}</strong></div>
               </div>
               {site.riskFlags.length > 0 && (
